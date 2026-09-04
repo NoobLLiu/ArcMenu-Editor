@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.fentai.arcmenu.editor.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "CameraMixin",
+    "GameRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
