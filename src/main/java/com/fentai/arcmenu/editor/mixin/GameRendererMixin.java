@@ -4,7 +4,7 @@ import com.fentai.arcmenu.editor.EditorScreen;
 import com.fentai.arcmenu.editor.EditorWorldCompositor;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -33,15 +33,15 @@ abstract class GameRendererMixin {
 
     /** The editor viewport is a clean camera feed; the editor draws its own UI. */
     @Redirect(
-            method = "extractGui",
+            method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/Gui;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V"
+                    target = "Lnet/minecraft/client/gui/Gui;render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V"
             )
     )
-    private void arcmenu$hideVanillaHudInEditor(Gui gui, GuiGraphicsExtractor graphics, DeltaTracker tracker) {
+    private void arcmenu$hideVanillaHudInEditor(Gui gui, GuiGraphics graphics, DeltaTracker tracker) {
         if (!(net.minecraft.client.Minecraft.getInstance().screen instanceof EditorScreen)) {
-            gui.extractRenderState(graphics, tracker);
+            gui.render(graphics, tracker);
         }
     }
 }

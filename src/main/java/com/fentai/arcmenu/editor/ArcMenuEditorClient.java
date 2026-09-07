@@ -17,8 +17,8 @@ public final class ArcMenuEditorClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        PayloadTypeRegistry.serverboundPlay().register(EditorPayload.TYPE, EditorPayload.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(EditorPayload.TYPE, EditorPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(EditorPayload.TYPE, EditorPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(EditorPayload.TYPE, EditorPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(EditorPayload.TYPE, (payload, context) -> receive(context.client(), payload));
         ClientPlayConnectionEvents.JOIN.register((listener, sender, client) -> send(new EditorProtocol.HelloPacket(CLIENT_VERSION)));
         ClientPlayConnectionEvents.DISCONNECT.register((listener, client) -> {

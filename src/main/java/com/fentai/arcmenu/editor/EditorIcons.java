@@ -1,6 +1,6 @@
 package com.fentai.arcmenu.editor;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
@@ -46,11 +46,11 @@ final class EditorIcons {
         return new Icon(u, v, 16, 16);
     }
 
-    static void draw(GuiGraphicsExtractor graphics, Icon icon, int x, int y) {
+    static void draw(GuiGraphics graphics, Icon icon, int x, int y) {
         draw(graphics, icon, x, y, 0xFFFFFFFF);
     }
 
-    static void draw(GuiGraphicsExtractor graphics, Icon icon, int x, int y, int color) {
+    static void draw(GuiGraphics graphics, Icon icon, int x, int y, int color) {
         graphics.blit(RenderPipelines.GUI_TEXTURED, ATLAS, x, y, icon.u(), icon.v(),
                 icon.width(), icon.height(), icon.width(), icon.height(), 256, 256, color);
     }

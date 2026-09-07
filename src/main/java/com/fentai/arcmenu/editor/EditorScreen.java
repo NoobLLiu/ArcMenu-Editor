@@ -1,7 +1,7 @@
 package com.fentai.arcmenu.editor;
 
 import com.fentai.arcmenu.protocol.EditorProtocol;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -210,7 +210,7 @@ public final class EditorScreen extends Screen {
 
     /** Keep the composited camera feed un-tinted inside the 16:9 viewport. */
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // The normal in-game Screen background is a full-window translucent
         // veil. Dock panels already provide their own opaque background, so a
         // veil here would incorrectly darken the real game viewport as well.
@@ -251,7 +251,7 @@ public final class EditorScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         currentLayout = layout.calculate(width, height);
         EditorViewport.update(currentLayout.viewport());
         hoverTooltip = null;
@@ -264,16 +264,16 @@ public final class EditorScreen extends Screen {
         drawTemplates(graphics, mouseX, mouseY);
         if (calibrationSettingsOpen) {
             drawCalibrationSettings(graphics, mouseX, mouseY);
-            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+            super.render(graphics, mouseX, mouseY, partialTick);
             return;
         }
         drawDragGhost(graphics, mouseX, mouseY);
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
         drawContextMenu(graphics, mouseX, mouseY);
         drawHoverTooltip(graphics);
     }
 
-    private void drawDragGhost(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawDragGhost(GuiGraphics graphics, int mouseX, int mouseY) {
         String label = !dragCandidateNode.isBlank() ? (state.selectedIds().size() > 1
                 ? EditorI18n.text("arcmenu_editor.common.elements", state.selectedIds().size()) : dragCandidateNode)
                 : !draggingTemplate.isBlank() ? EditorI18n.text("arcmenu_editor.common.template_drag", draggingTemplate) : "";
@@ -282,11 +282,11 @@ public final class EditorScreen extends Screen {
         int x = Math.min(width - ghostWidth - 3, mouseX + 9);
         int y = Math.min(height - 23, mouseY + 9);
         graphics.fill(x, y, x + ghostWidth, y + 20, 0xEE202631);
-        graphics.outline(x, y, ghostWidth, 20, ACCENT);
-        graphics.text(font, ellipsize(label, 24), x + 7, y + 6, TEXT, false);
+        graphics.renderOutline(x, y, ghostWidth, 20, ACCENT);
+        graphics.drawString(font, ellipsize(label, 24), x + 7, y + 6, TEXT, false);
     }
 
-    private void drawWorkspaceMask(GuiGraphicsExtractor graphics) {
+    private void drawWorkspaceMask(GuiGraphics graphics) {
         var l = currentLayout;
         fill(graphics, l.header(), HEADER);
         fill(graphics, l.tools(), PANEL);
@@ -300,7 +300,7 @@ public final class EditorScreen extends Screen {
         graphics.fill(host.x(), view.bottom(), host.right(), host.bottom(), PANEL_ALT);
         graphics.fill(host.x(), view.y(), view.x(), view.bottom(), PANEL_ALT);
         graphics.fill(view.right(), view.y(), host.right(), view.bottom(), PANEL_ALT);
-        graphics.outline(view.x() - 1, view.y() - 1, view.width() + 2, view.height() + 2, 0xFF657084);
+        graphics.renderOutline(view.x() - 1, view.y() - 1, view.width() + 2, view.height() + 2, 0xFF657084);
         graphics.fill(layout.toolsWidth() - 1, EditorLayout.HEADER_HEIGHT, layout.toolsWidth() + 1, height, BORDER);
         graphics.fill(width - layout.inspectorWidth() - 1, EditorLayout.HEADER_HEIGHT,
                 width - layout.inspectorWidth() + 1, height, BORDER);
@@ -308,8 +308,8 @@ public final class EditorScreen extends Screen {
                 width - layout.inspectorWidth(), height - layout.templatesHeight() + 1, BORDER);
     }
 
-    private void drawHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        graphics.text(font, "ArcMenu", 8, 8, TEXT, false);
+    private void drawHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.drawString(font, "ArcMenu", 8, 8, TEXT, false);
         EditorProtocol.SnapshotPacket snapshot = state.snapshot();
         int x = 68;
         x = headerButton(graphics, x, EditorI18n.text("arcmenu_editor.header.frontend"), state.activeTab() == EditorProtocol.TAB_FRONTEND, mouseX, mouseY);
@@ -322,29 +322,29 @@ public final class EditorScreen extends Screen {
         x = headerButton(graphics, x, EditorI18n.text("arcmenu_editor.header.settings"), calibrationSettingsOpen, mouseX, mouseY);
         String menu = snapshot == null ? EditorI18n.text("arcmenu_editor.header.disconnected")
                 : snapshot.menuId() + "  r" + snapshot.revision() + (snapshot.dirty() ? "  *" : "");
-        graphics.text(font, menu, Math.min(x + 8, width - 220), 8, snapshot != null && snapshot.dirty() ? 0xFFFFC857 : MUTED, false);
+        graphics.drawString(font, menu, Math.min(x + 8, width - 220), 8, snapshot != null && snapshot.dirty() ? 0xFFFFC857 : MUTED, false);
         String status = ellipsize(state.status(), 180);
-        graphics.text(font, status, Math.max(x + 110, width - font.width(status) - 28), 8,
+        graphics.drawString(font, status, Math.max(x + 110, width - font.width(status) - 28), 8,
                 state.errorStatus() ? DANGER : MUTED, false);
         EditorIcons.draw(graphics, EditorIcons.CLOSE, width - 20, 4, 0xFFE7A0A7);
     }
 
-    private int headerButton(GuiGraphicsExtractor graphics, int x, String label, boolean active, int mouseX, int mouseY) {
+    private int headerButton(GuiGraphics graphics, int x, String label, boolean active, int mouseX, int mouseY) {
         int buttonWidth = font.width(label) + 14;
         boolean hover = mouseX >= x && mouseX < x + buttonWidth && mouseY >= 3 && mouseY < 22;
         graphics.fill(x, 3, x + buttonWidth, 22, active ? ACCENT : hover ? 0xFF343B48 : 0xFF252A34);
-        graphics.text(font, label, x + 7, 8, TEXT, false);
+        graphics.drawString(font, label, x + 7, 8, TEXT, false);
         return x + buttonWidth + 3;
     }
 
-    private void drawCalibrationSettings(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawCalibrationSettings(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.fill(0, EditorLayout.HEADER_HEIGHT, width, height, 0xC9000000);
         EditorLayout.Rect panel = calibrationPanel();
         graphics.fill(panel.x(), panel.y(), panel.right(), panel.bottom(), 0xFF171A21);
-        graphics.outline(panel.x(), panel.y(), panel.width(), panel.height(), 0xFF657084);
+        graphics.renderOutline(panel.x(), panel.y(), panel.width(), panel.height(), 0xFF657084);
         graphics.fill(panel.x(), panel.y(), panel.right(), panel.y() + 31, HEADER);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.calibration.title"), panel.x() + 11, panel.y() + 11, TEXT, false);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.calibration.description"),
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.calibration.title"), panel.x() + 11, panel.y() + 11, TEXT, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.calibration.description"),
                 panel.x() + 116, panel.y() + 11, MUTED, false);
         EditorIcons.draw(graphics, EditorIcons.CLOSE, panel.right() - 21, panel.y() + 7, 0xFFE7A0A7);
 
@@ -356,32 +356,32 @@ public final class EditorScreen extends Screen {
             graphics.fill(row.x(), row.y(), row.right(), row.bottom(), selected ? SELECTED : hover ? 0xFF2B303A : PANEL);
             if (selected) graphics.fill(row.x(), row.y(), row.x() + 3, row.bottom(), ACCENT);
             EditorIcons.draw(graphics, kindIcon(kind), row.x() + 8, row.y() + 3, kindColor(kind));
-            graphics.text(font, calibrationKindLabel(kind), row.x() + 30, row.y() + 7, TEXT, false);
+            graphics.drawString(font, calibrationKindLabel(kind), row.x() + 30, row.y() + 7, TEXT, false);
         }
 
         int labelX = panel.x() + Math.min(165, Math.max(145, panel.width() / 3));
         for (CalibrationField field : calibrationFields) {
-            graphics.text(font, calibrationFieldLabel(field.index), labelX,
+            graphics.drawString(font, calibrationFieldLabel(field.index), labelX,
                     field.box.getY() + 7, MUTED, false);
         }
-        graphics.text(font, EditorI18n.text("arcmenu_editor.calibration.offset_help"), labelX, panel.y() + 230, MUTED, false);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.calibration.scale_help"), labelX, panel.y() + 244, MUTED, false);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.calibration.shared_help"), labelX, panel.y() + 258, 0xFF7F9CC3, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.calibration.offset_help"), labelX, panel.y() + 230, MUTED, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.calibration.scale_help"), labelX, panel.y() + 244, MUTED, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.calibration.shared_help"), labelX, panel.y() + 258, 0xFF7F9CC3, false);
         settingButton(graphics, calibrationResetRect(), EditorI18n.text("arcmenu_editor.calibration.reset"), mouseX, mouseY, false);
         settingButton(graphics, calibrationSaveRect(), EditorI18n.text("arcmenu_editor.calibration.save"), mouseX, mouseY, true);
         String status = ellipsize(state.status(), Math.max(20, (panel.width() - 245) / 6));
-        graphics.text(font, status, panel.x() + 10, panel.bottom() - 20, MUTED, false);
+        graphics.drawString(font, status, panel.x() + 10, panel.bottom() - 20, MUTED, false);
     }
 
-    private void settingButton(GuiGraphicsExtractor graphics, EditorLayout.Rect rect, String label,
+    private void settingButton(GuiGraphics graphics, EditorLayout.Rect rect, String label,
                                int mouseX, int mouseY, boolean primary) {
         boolean hover = rect.contains(mouseX, mouseY);
         graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(),
                 primary ? (hover ? 0xFF4B9AFF : ACCENT) : (hover ? 0xFF343B48 : 0xFF252A34));
-        graphics.centeredText(font, label, rect.x() + rect.width() / 2, rect.y() + 7, TEXT);
+        graphics.drawCenteredString(font, label, rect.x() + rect.width() / 2, rect.y() + 7, TEXT);
     }
 
-    private void drawTools(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawTools(GuiGraphics graphics, int mouseX, int mouseY) {
         var panel = currentLayout.tools();
         title(graphics, panel, EditorI18n.text("arcmenu_editor.panel.tools"));
         ToolDefinition[] tools = state.activeTab() == EditorProtocol.TAB_BACKEND
@@ -411,10 +411,10 @@ public final class EditorScreen extends Screen {
             int y = contentTop + row * (cellHeight + gap) - toolsScroll;
             boolean hover = mouseX >= x && mouseX < x + cellWidth && mouseY >= y && mouseY < y + cellHeight;
             graphics.fill(x, y, x + cellWidth, y + cellHeight, hover ? 0xFF343B48 : 0xFF242933);
-            if (hover) graphics.outline(x, y, cellWidth, cellHeight, 0xFF52647C);
+            if (hover) graphics.renderOutline(x, y, cellWidth, cellHeight, 0xFF52647C);
             EditorIcons.draw(graphics, tool.icon, x + (cellWidth - 16) / 2, y + 3,
                     hover ? 0xFF82B7FF : 0xFFD9DFEA);
-            graphics.centeredText(font, tool.label, x + cellWidth / 2, y + 23, hover ? TEXT : MUTED);
+            graphics.drawCenteredString(font, tool.label, x + cellWidth / 2, y + 23, hover ? TEXT : MUTED);
             if (tool.kind == EditorProtocol.KIND_IMAGE) {
                 EditorIcons.draw(graphics, imageToolExpanded ? EditorIcons.CHEVRON_LEFT : EditorIcons.CHEVRON_RIGHT,
                         x + cellWidth - 9, y + 21, 0xFF9AA4B2);
@@ -424,19 +424,19 @@ public final class EditorScreen extends Screen {
         int rows = (tools.length + columns - 1) / columns;
         int y = contentTop + rows * (cellHeight + gap) + 2 - toolsScroll;
         if (imageToolExpanded && state.snapshot() != null && state.activeTab() == EditorProtocol.TAB_FRONTEND) {
-            graphics.text(font, EditorI18n.text("arcmenu_editor.images.server"), panel.x() + 7, y + 3, 0xFF8390A3, false);
+            graphics.drawString(font, EditorI18n.text("arcmenu_editor.images.server"), panel.x() + 7, y + 3, 0xFF8390A3, false);
             y += 15;
             for (EditorProtocol.ImageSnapshot image : state.snapshot().images()) {
                 int x = panel.x() + 5;
                 boolean imageHover = mouseX >= x && mouseX < panel.right() - 5 && mouseY >= y && mouseY < y + 23;
                 graphics.fill(x, y, panel.right() - 5, y + 23, imageHover ? 0xFF354052 : 0xFF171B22);
                 EditorIcons.draw(graphics, EditorIcons.IMAGE, x + 3, y + 4, 0xFFB8A8FF);
-                graphics.text(font, ellipsize(image.path(), Math.max(6, (panel.width() - 31) / 6)), x + 22, y + 7, TEXT, false);
+                graphics.drawString(font, ellipsize(image.path(), Math.max(6, (panel.width() - 31) / 6)), x + 22, y + 7, TEXT, false);
                 imageRows.add(new ImageRow(image, new EditorLayout.Rect(x, y, panel.width() - 10, 23)));
                 y += 25;
             }
             if (state.snapshot().images().isEmpty()) {
-                graphics.centeredText(font, EditorI18n.text("arcmenu_editor.images.none"), panel.x() + panel.width() / 2, y + 6, MUTED);
+                graphics.drawCenteredString(font, EditorI18n.text("arcmenu_editor.images.none"), panel.x() + panel.width() / 2, y + 6, MUTED);
                 y += 20;
             }
         }
@@ -444,12 +444,12 @@ public final class EditorScreen extends Screen {
         toolContentHeight = Math.max(0, y + toolsScroll - contentTop);
     }
 
-    private void drawViewport(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawViewport(GuiGraphics graphics, int mouseX, int mouseY) {
         var view = currentLayout.viewport();
         var virtual = virtualScreen();
         EditorProtocol.SnapshotPacket snapshot = state.snapshot();
         if (snapshot == null) {
-            graphics.centeredText(font, EditorI18n.text("arcmenu_editor.viewport.open_instruction"), view.x() + view.width() / 2,
+            graphics.drawCenteredString(font, EditorI18n.text("arcmenu_editor.viewport.open_instruction"), view.x() + view.width() / 2,
                     view.y() + view.height() / 2, TEXT);
             return;
         }
@@ -468,7 +468,7 @@ public final class EditorScreen extends Screen {
             int h = Math.max(2, screenY(drawY - drawHeight / 2) - y);
             int color = state.selected(node.id()) ? (node.id().equals(state.selectedId()) ? 0xFFFFC857 : 0xFF8FB7ED)
                     : state.activeTab() == EditorProtocol.TAB_BACKEND ? 0xB04096FF : 0x885D88C7;
-            graphics.outline(x, y, w, h, color);
+            graphics.renderOutline(x, y, w, h, color);
             if (node.id().equals(state.selectedId())) {
                 graphics.fill(x + w - 3, y + h - 3, x + w + 3, y + h + 3, ACCENT);
             }
@@ -477,22 +477,22 @@ public final class EditorScreen extends Screen {
         int virtualY = (int) Math.round(virtual.y());
         int virtualRight = (int) Math.round(virtual.right());
         int virtualBottom = (int) Math.round(virtual.bottom());
-        graphics.outline(virtualX, virtualY, Math.max(1, virtualRight - virtualX), Math.max(1, virtualBottom - virtualY), 0xFFB38CFF);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.viewport.game", view.width(), view.height()),
+        graphics.renderOutline(virtualX, virtualY, Math.max(1, virtualRight - virtualX), Math.max(1, virtualBottom - virtualY), 0xFFB38CFF);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.viewport.game", view.width(), view.height()),
                 view.x() + 5, view.y() + 5, 0xCCFFFFFF, true);
         String calibration = EditorI18n.text("arcmenu_editor.viewport.calibration",
                 format(layout.virtualScreenScale()), format(layout.virtualScreenOffsetX()), format(layout.virtualScreenOffsetY()));
-        graphics.text(font, calibration, view.x() + 5, view.y() + 17, 0xDDBF9CFF, true);
+        graphics.drawString(font, calibration, view.x() + 5, view.y() + 17, 0xDDBF9CFF, true);
         if (virtual.contains(mouseX, mouseY)) {
             double menuX = menuX(mouseX);
             double menuY = menuY(mouseY);
             String coordinates = EditorI18n.text("arcmenu_editor.viewport.coordinates", format(menuX), format(menuY));
-            graphics.text(font, coordinates, virtualX + 5, virtualBottom - 13, 0xCCFFFFFF, true);
+            graphics.drawString(font, coordinates, virtualX + 5, virtualBottom - 13, 0xCCFFFFFF, true);
         }
         graphics.disableScissor();
     }
 
-    private void drawElementManager(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawElementManager(GuiGraphics graphics, int mouseX, int mouseY) {
         var panel = currentLayout.manager();
         title(graphics, panel, EditorI18n.text("arcmenu_editor.panel.manager"));
         managerButtons.clear();
@@ -510,7 +510,7 @@ public final class EditorScreen extends Screen {
                 EditorI18n.text("arcmenu_editor.manager.paste"), ManagerAction.PASTE, mouseX, mouseY);
         String selectedCount = state.selectedIds().isEmpty() ? Integer.toString(state.nodes().size())
                 : state.selectedIds().size() + " / " + state.nodes().size();
-        graphics.text(font, selectedCount, panel.right() - font.width(selectedCount) - 7, panel.y() + 28, MUTED, false);
+        graphics.drawString(font, selectedCount, panel.right() - font.width(selectedCount) - 7, panel.y() + 28, MUTED, false);
         nodeRows.clear();
         Map<String, List<EditorProtocol.NodeSnapshot>> children = new HashMap<>();
         for (EditorProtocol.NodeSnapshot node : state.nodes()) {
@@ -536,16 +536,16 @@ public final class EditorScreen extends Screen {
                     && canMoveToParent(dragSelection, nodeRow.node.parentId());
             if (selected || hover) graphics.fill(panel.x() + 3, y, panel.right() - 3, y + 19,
                     groupDrop ? 0xFF24513E : selected ? SELECTED : 0xFF2B303A);
-            if (groupDrop) graphics.outline(panel.x() + 3, y, panel.width() - 6, 19, 0xFF65D68A);
+            if (groupDrop) graphics.renderOutline(panel.x() + 3, y, panel.width() - 6, 19, 0xFF65D68A);
             if (levelDrop) graphics.fill(panel.x() + 3, y, panel.right() - 3, y + 2, 0xFF65D68A);
             if (nodeRow.node.id().equals(state.selectedId())) graphics.fill(panel.x() + 3, y, panel.x() + 5, y + 19, ACCENT);
             int x = panel.x() + 8 + nodeRow.depth * 13;
             if (state.hasChildren(nodeRow.node.id())) {
-                graphics.text(font, state.expanded().contains(nodeRow.node.id()) ? "-" : "+", x + 2, y + 5, MUTED, false);
+                graphics.drawString(font, state.expanded().contains(nodeRow.node.id()) ? "-" : "+", x + 2, y + 5, MUTED, false);
                 x += 11;
             } else x += 11;
             EditorIcons.draw(graphics, kindIcon(nodeRow.node.kind()), x - 2, y + 2, kindColor(nodeRow.node.kind()));
-            graphics.text(font, ellipsize(nodeRow.node.id(), Math.max(10, (panel.width() - x - 55) / 6)), x + 16, y + 5, TEXT, false);
+            graphics.drawString(font, ellipsize(nodeRow.node.id(), Math.max(10, (panel.width() - x - 55) / 6)), x + 16, y + 5, TEXT, false);
             EditorIcons.draw(graphics, nodeRow.node.visible() ? EditorIcons.VISIBLE : EditorIcons.INVISIBLE,
                     panel.right() - 38, y + 2, nodeRow.node.visible() ? 0xFF9BE2A0 : 0xFF697382);
             EditorIcons.draw(graphics, state.locked(nodeRow.node.id()) ? EditorIcons.LOCKED : EditorIcons.UNLOCKED,
@@ -556,12 +556,12 @@ public final class EditorScreen extends Screen {
         if (managerDrag && state.activeTab() == EditorProtocol.TAB_FRONTEND
                 && panel.contains(mouseX, mouseY) && mouseY >= panel.y() + 46 && !hoveringRow
                 && canMoveToParent(dragSelection, "")) {
-            graphics.outline(panel.x() + 3, panel.y() + 46, panel.width() - 6,
+            graphics.renderOutline(panel.x() + 3, panel.y() + 46, panel.width() - 6,
                     Math.max(1, panel.height() - 49), 0xFF65D68A);
         }
     }
 
-    private int managerButton(GuiGraphicsExtractor graphics, int x, int y, EditorIcons.Icon icon,
+    private int managerButton(GuiGraphics graphics, int x, int y, EditorIcons.Icon icon,
                               String tooltip, ManagerAction action, int mouseX, int mouseY) {
         boolean hover = mouseX >= x && mouseX < x + 22 && mouseY >= y && mouseY < y + 21;
         graphics.fill(x, y, x + 22, y + 21, hover ? 0xFF343B48 : 0xFF242933);
@@ -571,7 +571,7 @@ public final class EditorScreen extends Screen {
         return x + 25;
     }
 
-    private void drawHoverTooltip(GuiGraphicsExtractor graphics) {
+    private void drawHoverTooltip(GuiGraphics graphics) {
         if (hoverTooltip == null || contextMenu != null) return;
         int tooltipWidth = Math.min(width - 4, font.width(hoverTooltip.text) + 10);
         int tooltipHeight = 19;
@@ -579,8 +579,8 @@ public final class EditorScreen extends Screen {
         int y = Math.max(2, Math.min(height - tooltipHeight - 2, hoverTooltip.y));
         graphics.fill(x + 3, y + 3, x + tooltipWidth + 3, y + tooltipHeight + 3, 0x77000000);
         graphics.fill(x, y, x + tooltipWidth, y + tooltipHeight, 0xFF161920);
-        graphics.outline(x, y, tooltipWidth, tooltipHeight, BORDER);
-        graphics.text(font, hoverTooltip.text, x + 5, y + 6, TEXT, false);
+        graphics.renderOutline(x, y, tooltipWidth, tooltipHeight, BORDER);
+        graphics.drawString(font, hoverTooltip.text, x + 5, y + 6, TEXT, false);
     }
 
     private void appendRows(Map<String, List<EditorProtocol.NodeSnapshot>> children, String parent, int depth, int[] row) {
@@ -591,17 +591,17 @@ public final class EditorScreen extends Screen {
         }
     }
 
-    private void drawProperties(GuiGraphicsExtractor graphics) {
+    private void drawProperties(GuiGraphics graphics) {
         var panel = currentLayout.properties();
         title(graphics, panel, EditorI18n.text("arcmenu_editor.panel.properties"));
         EditorProtocol.NodeSnapshot node = state.find(state.selectedId());
         if (node == null) {
-            graphics.centeredText(font, EditorI18n.text("arcmenu_editor.properties.select"), panel.x() + panel.width() / 2, panel.y() + 43, MUTED);
+            graphics.drawCenteredString(font, EditorI18n.text("arcmenu_editor.properties.select"), panel.x() + panel.width() / 2, panel.y() + 43, MUTED);
             return;
         }
         graphics.enableScissor(panel.x(), panel.y() + 21, panel.right(), panel.bottom() - 21);
         for (PropertyField field : propertyFields) {
-            graphics.text(font, propertyLabel(field.property.key()), panel.x() + 8, field.y + 7, MUTED, false);
+            graphics.drawString(font, propertyLabel(field.property.key()), panel.x() + 8, field.y + 7, MUTED, false);
             graphics.fill(field.rect.x(), field.rect.y(), field.rect.right(), field.rect.bottom(),
                     field.box.isFocused() ? 0xFF223A5B : 0xFF171A20);
             int stripe = propertyStripe(field.property.key());
@@ -614,13 +614,13 @@ public final class EditorScreen extends Screen {
             }
         }
         graphics.disableScissor();
-        graphics.text(font, EditorI18n.text("arcmenu_editor.properties.help"), panel.x() + 8, panel.bottom() - 15, 0xFF788394, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.properties.help"), panel.x() + 8, panel.bottom() - 15, 0xFF788394, false);
     }
 
-    private void drawTemplates(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawTemplates(GuiGraphics graphics, int mouseX, int mouseY) {
         var panel = currentLayout.templates();
         title(graphics, panel, EditorI18n.text("arcmenu_editor.panel.templates"));
-        graphics.text(font, EditorI18n.text("arcmenu_editor.templates.help"),
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.templates.help"),
                 panel.x() + 10, panel.y() + 25, MUTED, false);
         int cardY = panel.y() + 45 - templateScroll;
         int cardW = 126;
@@ -638,58 +638,58 @@ public final class EditorScreen extends Screen {
             if (!visible) continue;
             boolean hover = mouseX >= x && mouseX < x + cardW && mouseY >= Math.max(y, panel.y() + 43) && mouseY < Math.min(y + 78, panel.bottom());
             graphics.fill(x, y, x + cardW, y + 78, hover ? 0xFF303846 : 0xFF242933);
-            graphics.outline(x, y, cardW, 78, hover ? 0xFF6EA8F5 : BORDER);
+            graphics.renderOutline(x, y, cardW, 78, hover ? 0xFF6EA8F5 : BORDER);
             graphics.fill(x + 6, y + 6, x + cardW - 6, y + 49, 0xFF11141A);
             if (template == null) {
-                graphics.centeredText(font, EditorI18n.text("arcmenu_editor.templates.drop"), x + cardW / 2, y + 23, 0xFF8FB7ED);
+                graphics.drawCenteredString(font, EditorI18n.text("arcmenu_editor.templates.drop"), x + cardW / 2, y + 23, 0xFF8FB7ED);
             } else {
                 EditorIcons.draw(graphics, EditorIcons.FOLDER, x + cardW / 2 - 28, y + 16, 0xFF6CC7EA);
-                graphics.text(font, EditorI18n.text("arcmenu_editor.common.elements", template.nodeCount()), x + cardW / 2 - 8, y + 23, 0xFF6CC7EA, false);
+                graphics.drawString(font, EditorI18n.text("arcmenu_editor.common.elements", template.nodeCount()), x + cardW / 2 - 8, y + 23, 0xFF6CC7EA, false);
             }
-            graphics.text(font, template == null ? EditorI18n.text("arcmenu_editor.templates.none") : ellipsize(template.id(), 18), x + 7, y + 61, TEXT, false);
+            graphics.drawString(font, template == null ? EditorI18n.text("arcmenu_editor.templates.none") : ellipsize(template.id(), 18), x + 7, y + 61, TEXT, false);
             if (template != null) templateCards.add(new TemplateCard(template, new EditorLayout.Rect(x, y, cardW, 78)));
         }
         graphics.disableScissor();
         if (!dragCandidateNode.isBlank() && currentLayout.templates().contains(mouseX, mouseY)) {
-            graphics.outline(panel.x() + 4, panel.y() + 4, panel.width() - 8, panel.height() - 8, ACCENT);
+            graphics.renderOutline(panel.x() + 4, panel.y() + 4, panel.width() - 8, panel.height() - 8, ACCENT);
         }
         if (!pendingTemplateNode.isBlank()) drawTemplateDialog(graphics);
     }
 
-    private void drawTemplateDialog(GuiGraphicsExtractor graphics) {
+    private void drawTemplateDialog(GuiGraphics graphics) {
         int dialogWidth = 260;
         int x = (width - dialogWidth) / 2;
         int y = height / 2 - 48;
         graphics.fill(x, y, x + dialogWidth, y + 96, 0xFC171A20);
-        graphics.outline(x, y, dialogWidth, 96, ACCENT);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.templates.save_title"), x + 12, y + 12, TEXT, false);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.templates.name"), x + 12, y + 34, MUTED, false);
-        graphics.text(font, EditorI18n.text("arcmenu_editor.templates.submit_help"), x + 12, y + 75, MUTED, false);
+        graphics.renderOutline(x, y, dialogWidth, 96, ACCENT);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.templates.save_title"), x + 12, y + 12, TEXT, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.templates.name"), x + 12, y + 34, MUTED, false);
+        graphics.drawString(font, EditorI18n.text("arcmenu_editor.templates.submit_help"), x + 12, y + 75, MUTED, false);
     }
 
-    private void title(GuiGraphicsExtractor graphics, EditorLayout.Rect panel, String value) {
+    private void title(GuiGraphics graphics, EditorLayout.Rect panel, String value) {
         graphics.fill(panel.x(), panel.y(), panel.right(), panel.y() + 20, HEADER);
-        graphics.text(font, value, panel.x() + 7, panel.y() + 6, TEXT, false);
+        graphics.drawString(font, value, panel.x() + 7, panel.y() + 6, TEXT, false);
         graphics.fill(panel.x(), panel.y() + 19, panel.right(), panel.y() + 20, BORDER);
     }
 
-    private void property(GuiGraphicsExtractor graphics, EditorLayout.Rect panel, int y, String label, String value) {
-        graphics.text(font, label, panel.x() + 8, y + 5, MUTED, false);
+    private void property(GuiGraphics graphics, EditorLayout.Rect panel, int y, String label, String value) {
+        graphics.drawString(font, label, panel.x() + 8, y + 5, MUTED, false);
         int x = panel.x() + 72;
         graphics.fill(x, y, panel.right() - 8, y + 20, 0xFF171A20);
-        graphics.text(font, ellipsize(value, 35), x + 6, y + 6, TEXT, false);
+        graphics.drawString(font, ellipsize(value, 35), x + 6, y + 6, TEXT, false);
     }
 
-    private void property2(GuiGraphicsExtractor graphics, EditorLayout.Rect panel, int y, String label, double a, double b) {
-        graphics.text(font, label, panel.x() + 8, y, MUTED, false);
+    private void property2(GuiGraphics graphics, EditorLayout.Rect panel, int y, String label, double a, double b) {
+        graphics.drawString(font, label, panel.x() + 8, y, MUTED, false);
         int x = panel.x() + 8;
         int w = (panel.width() - 25) / 2;
         smallField(graphics, x, y + 12, w, "X  " + format(a), 0xFFE95C66);
         smallField(graphics, x + w + 7, y + 12, w, "Y  " + format(b), 0xFF56D364);
     }
 
-    private void property3(GuiGraphicsExtractor graphics, EditorLayout.Rect panel, int y, String label, double a, double b, double c) {
-        graphics.text(font, label, panel.x() + 8, y, MUTED, false);
+    private void property3(GuiGraphics graphics, EditorLayout.Rect panel, int y, String label, double a, double b, double c) {
+        graphics.drawString(font, label, panel.x() + 8, y, MUTED, false);
         int x = panel.x() + 8;
         int w = (panel.width() - 30) / 3;
         smallField(graphics, x, y + 12, w, "X " + format(a), 0xFFE95C66);
@@ -697,10 +697,10 @@ public final class EditorScreen extends Screen {
         smallField(graphics, x + (w + 5) * 2, y + 12, w, "Z " + format(c), 0xFF55A6F1);
     }
 
-    private void smallField(GuiGraphicsExtractor graphics, int x, int y, int width, String value, int stripe) {
+    private void smallField(GuiGraphics graphics, int x, int y, int width, String value, int stripe) {
         graphics.fill(x, y, x + width, y + 20, 0xFF171A20);
         graphics.fill(x, y, x + 2, y + 20, stripe);
-        graphics.centeredText(font, ellipsize(value, 12), x + width / 2, y + 6, TEXT);
+        graphics.drawCenteredString(font, ellipsize(value, 12), x + width / 2, y + 6, TEXT);
     }
 
     @Override
@@ -1523,13 +1523,13 @@ public final class EditorScreen extends Screen {
         rebuildWidgets();
     }
 
-    private void drawContextMenu(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void drawContextMenu(GuiGraphics graphics, int mouseX, int mouseY) {
         if (contextMenu == null) return;
         int height = contextMenu.entries.size() * 21 + 4;
         graphics.fill(contextMenu.x + 4, contextMenu.y + 4, contextMenu.x + contextMenu.width + 5,
                 contextMenu.y + height + 5, 0x77000000);
         graphics.fill(contextMenu.x, contextMenu.y, contextMenu.x + contextMenu.width, contextMenu.y + height, 0xFF161920);
-        graphics.outline(contextMenu.x, contextMenu.y, contextMenu.width, height, BORDER);
+        graphics.renderOutline(contextMenu.x, contextMenu.y, contextMenu.width, height, BORDER);
         for (int index = 0; index < contextMenu.entries.size(); index++) {
             ContextEntry entry = contextMenu.entries.get(index);
             int y = contextMenu.y + 2 + index * 21;
@@ -1538,9 +1538,9 @@ public final class EditorScreen extends Screen {
             if (hover) graphics.fill(contextMenu.x + 2, y, contextMenu.x + contextMenu.width - 2, y + 21, SELECTED);
             int color = entry.enabled ? TEXT : 0xFF626A77;
             EditorIcons.draw(graphics, entry.icon, contextMenu.x + 5, y + 2, color);
-            graphics.text(font, entry.label, contextMenu.x + 26, y + 7, color, false);
+            graphics.drawString(font, entry.label, contextMenu.x + 26, y + 7, color, false);
             if (!entry.shortcut.isBlank()) {
-                graphics.text(font, entry.shortcut, contextMenu.x + contextMenu.width - font.width(entry.shortcut) - 7,
+                graphics.drawString(font, entry.shortcut, contextMenu.x + contextMenu.width - font.width(entry.shortcut) - 7,
                         y + 7, entry.enabled ? MUTED : 0xFF555C68, false);
             }
         }
@@ -1649,7 +1649,7 @@ public final class EditorScreen extends Screen {
         return new EditorLayout.Rect(panel.right() - 120, panel.bottom() - 31, 108, 22);
     }
 
-    private static void fill(GuiGraphicsExtractor graphics, EditorLayout.Rect rect, int color) {
+    private static void fill(GuiGraphics graphics, EditorLayout.Rect rect, int color) {
         graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), color);
     }
 
